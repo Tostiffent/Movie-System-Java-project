@@ -90,7 +90,7 @@ public class Main {
         JPanel totalCard = createStatCard("Total Comedy Movies", String.valueOf(movieList.size()), PRIMARY_COLOR);
 
         double avgRating = movieList.stream().mapToDouble(Movie::getRating).average().orElse(0.0);
-        JPanel ratingCard = createStatCard("Avg Rating", String.format("%.1f/10", avgRating), SUCCESS_COLOR);
+        JPanel ratingCard = createStatCard("Avg Comedy Rating", String.format("%.1f/10", avgRating), SUCCESS_COLOR);
 
         String latestMovie = movieList.isEmpty() ? "None" : movieList.get(movieList.size() - 1).getTitle();
         JPanel latestCard = createStatCard("Latest Added Comedy Movie", latestMovie, SECONDARY_COLOR);
@@ -177,7 +177,7 @@ public class Main {
     }
 
     private static void createMovieTable() {
-        String[] columns = {"ID", "Title", "Running Time", "Rating", "Director", "Release Date"};
+        String[] columns = {"ID", "Title", "Running Time", "Comedy Rating", "Director", "Release Date"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -198,9 +198,9 @@ public class Main {
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        moviesTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // ID
-        moviesTable.getColumnModel().getColumn(2).setCellRenderer(centerRenderer); // Running Time
-        moviesTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer); // Rating
+        moviesTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        moviesTable.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+        moviesTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
 
         moviesTable.getColumnModel().getColumn(0).setPreferredWidth(50);
         moviesTable.getColumnModel().getColumn(1).setPreferredWidth(200);
@@ -285,7 +285,7 @@ public class Main {
         formPanel.add(runningTimeField, gbc);
 
         gbc.gridx = 2; gbc.gridwidth = 1;
-        JLabel ratingLabel = createFieldLabel("Rating (0-10):");
+        JLabel ratingLabel = createFieldLabel("Comedy Rating (0-10):");
         ratingLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         formPanel.add(ratingLabel, gbc);
         gbc.gridx = 3;
@@ -525,12 +525,12 @@ public class Main {
             if (!ratingText.isEmpty()) {
                 double rating = Double.parseDouble(ratingText);
                 if (rating < 0 || rating > 10) {
-                    throw new IllegalArgumentException("Rating must be between 0 and 10.");
+                    throw new IllegalArgumentException("Comedy Rating must be between 0 and 10.");
                 }
                 movie.setRating(rating);
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Rating must be a valid number.");
+            throw new IllegalArgumentException("Comedy Rating must be a valid number.");
         }
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         try {
@@ -654,7 +654,7 @@ public class Main {
         gbc.gridy = 1;
         addDetailRow(infoPanel, gbc, "Running Time:", movie.getRunningTimeMinutes() + " minutes");
         gbc.gridy = 2;
-        addDetailRow(infoPanel, gbc, "Rating:", movie.getRating() + "/10");
+        addDetailRow(infoPanel, gbc, "Comedy Rating:", movie.getRating() + "/10");
         gbc.gridy = 3;
         addDetailRow(infoPanel, gbc, "Release Date:", movie.getReleaseDate() != null ? new SimpleDateFormat("yyyy-MM-dd").format(movie.getReleaseDate()) : "");
         gbc.gridy = 4;
