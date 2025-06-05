@@ -13,6 +13,7 @@ import org.moviesystem.model.Actor;
 import org.moviesystem.model.Director;
 import org.moviesystem.model.Movie;
 import org.moviesystem.model.Review;
+import org.moviesystem.model.User;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
@@ -49,40 +50,40 @@ public class Main {
         DatabaseUtil.initializeDatabase();
         movieList = MovieDAO.getAllMovies();
         SwingUtilities.invokeLater(() -> {
-            createAndShowGUI();
+            new LoginFrame().setVisible(true);
         });
     }
 
-    private static void createAndShowGUI() {
-        mainFrame = new JFrame("Comedy Movie System");
+    public static void createAndShowGUI(User user) {
+        mainFrame = new JFrame("Comedy Movie System - " + user.getUsername());
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setSize(1000, 700);
         mainFrame.setLocationRelativeTo(null);
         mainFrame.getContentPane().setBackground(BACKGROUND_COLOR);
 
-        dashboardTab = createDashboardTab();
+        dashboardTab = createDashboardTab(user);
         mainFrame.add(dashboardTab);
         mainFrame.setVisible(true);
     }
 
-    private static JPanel createDashboardTab() {
+    private static JPanel createDashboardTab(User user) {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(BACKGROUND_COLOR);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        statsPanel = createStatsPanel();
+        statsPanel = createStatsPanel(user);
         panel.add(statsPanel, BorderLayout.NORTH);
 
         JPanel tablePanel = createTablePanel();
         panel.add(tablePanel, BorderLayout.CENTER);
 
-        JPanel actionPanel = createActionButtonsPanel();
+        JPanel actionPanel = createActionButtonsPanel(user);
         panel.add(actionPanel, BorderLayout.SOUTH);
 
         return panel;
     }
 
-    private static JPanel createStatsPanel() {
+    private static JPanel createStatsPanel(User user) {
         JPanel statsPanel = new JPanel(new GridLayout(1, 4, 15, 0));
         statsPanel.setBackground(BACKGROUND_COLOR);
         statsPanel.setBorder(new EmptyBorder(0, 0, 20, 0));
@@ -95,7 +96,7 @@ public class Main {
         String latestMovie = movieList.isEmpty() ? "None" : movieList.get(movieList.size() - 1).getTitle();
         JPanel latestCard = createStatCard("Latest Added Comedy Movie", latestMovie, SECONDARY_COLOR);
 
-        JPanel actionCard = createQuickActionCard();
+        JPanel actionCard = createQuickActionCard(user);
 
         statsPanel.add(totalCard);
         statsPanel.add(ratingCard);
@@ -126,7 +127,7 @@ public class Main {
         return card;
     }
 
-    private static JPanel createQuickActionCard() {
+    private static JPanel createQuickActionCard(User user) {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(CARD_COLOR);
         card.setBorder(BorderFactory.createCompoundBorder(
@@ -139,6 +140,7 @@ public class Main {
 
         JButton quickAddBtn = createStyledButton("Add Movie", WARNING_COLOR);
         quickAddBtn.addActionListener(e -> createAndShowAddMovieDialog());
+        quickAddBtn.setVisible(user.getUserType().equals("admin"));
 
         card.add(titleLabel, BorderLayout.NORTH);
         card.add(quickAddBtn, BorderLayout.CENTER);
@@ -225,10 +227,10 @@ public class Main {
                 movie.getReleaseDate() != null ? dateFormat.format(movie.getReleaseDate()) : ""
             });
         }
-        refreshStatsPanel();
+        refreshStatsPanel(LoginFrame.getCurrentUser());
     }
 
-    private static JPanel createActionButtonsPanel() {
+    private static JPanel createActionButtonsPanel(User user) {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
         panel.setBackground(BACKGROUND_COLOR);
 
@@ -239,6 +241,10 @@ public class Main {
         viewBtn.addActionListener(e -> viewSelectedMovie());
         editBtn.addActionListener(e -> editSelectedMovie());
         deleteBtn.addActionListener(e -> deleteSelectedMovie());
+
+        // Only show edit and delete buttons for admin users
+        editBtn.setVisible(user.getUserType().equals("admin"));
+        deleteBtn.setVisible(user.getUserType().equals("admin"));
 
         panel.add(viewBtn);
         panel.add(editBtn);
@@ -446,11 +452,17 @@ public class Main {
 
             if (confirmation == JOptionPane.YES_OPTION) {
                 int movieId = (int) tableModel.getValueAt(selectedRow, 0);
-                movieList.removeIf(movie -> movie.getId() == movieId);
-                loadMoviesIntoTable();
-                JOptionPane.showMessageDialog(mainFrame,
-                        "Movie deleted successfully!",
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                if (MovieDAO.deleteMovie(movieId)) {  // First delete from database
+                    movieList.removeIf(movie -> movie.getId() == movieId);  // Then update memory
+                    loadMoviesIntoTable();
+                    JOptionPane.showMessageDialog(mainFrame,
+                            "Movie deleted successfully!",
+                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(mainFrame,
+                            "Failed to delete movie from database.",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         } else {
             JOptionPane.showMessageDialog(mainFrame,
@@ -484,20 +496,26 @@ public class Main {
     private static void updateExistingMovie() {
         try {
             Movie updatedMovie = getMovieFromForm();
-            for (int i = 0; i < movieList.size(); i++) {
-                if (movieList.get(i).getId() == updatedMovie.getId()) {
-                    movieList.set(i, updatedMovie);
-                    break;
+            if (MovieDAO.updateMovie(updatedMovie)) {  // First update in database
+                // Then update in memory
+                for (int i = 0; i < movieList.size(); i++) {
+                    if (movieList.get(i).getId() == updatedMovie.getId()) {
+                        movieList.set(i, updatedMovie);
+                        break;
+                    }
                 }
+
+                JOptionPane.showMessageDialog(mainFrame,
+                        "Movie updated successfully!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                clearMovieForm();
+                loadMoviesIntoTable();
+            } else {
+                JOptionPane.showMessageDialog(mainFrame,
+                        "Failed to update movie in database.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
             }
-
-            JOptionPane.showMessageDialog(mainFrame,
-                    "Movie updated successfully!",
-                    "Success", JOptionPane.INFORMATION_MESSAGE);
-
-            clearMovieForm();
-            loadMoviesIntoTable();
-
         } catch (Exception e) {
             JOptionPane.showMessageDialog(mainFrame,
                     "Error updating movie: " + e.getMessage(),
@@ -731,10 +749,10 @@ public class Main {
         dialog.setVisible(true);
     }
 
-    private static void refreshStatsPanel() {
+    private static void refreshStatsPanel(User user) {
         if (dashboardTab == null || statsPanel == null) return;
         dashboardTab.remove(statsPanel);
-        statsPanel = createStatsPanel();
+        statsPanel = createStatsPanel(user);
         dashboardTab.add(statsPanel, BorderLayout.NORTH);
         mainFrame.revalidate();
         mainFrame.repaint();
