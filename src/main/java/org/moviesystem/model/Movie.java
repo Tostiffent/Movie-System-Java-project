@@ -4,38 +4,43 @@ import java.util.Date;
 import java.util.List;
 
 public class Movie {
-    private int id;
+    private int movieId;
     private String title;
     private int runningTimeMinutes;
     private double rating;
     private Date releaseDate;
     private List<Actor> actors;
     private Director director;
+    private Language language;
+    private List<Genre> genres;
     private String plot;
     private List<Review> reviews;
 
     public Movie() {
     }
 
-    public Movie(int id, String title, int runningTimeMinutes, double rating,
-                Date releaseDate, List<Actor> actors, Director director, String plot, List<Review> reviews) {
-        this.id = id;
+    public Movie(int movieId, String title, int runningTimeMinutes, double rating,
+                Date releaseDate, List<Actor> actors, Director director, 
+                Language language, List<Genre> genres, String plot, List<Review> reviews) {
+        this.movieId = movieId;
         this.title = title;
         this.runningTimeMinutes = runningTimeMinutes;
         this.rating = rating;
         this.releaseDate = releaseDate;
         this.actors = actors;
         this.director = director;
+        this.language = language;
+        this.genres = genres;
         this.plot = plot;
         this.reviews = reviews;
     }
 
-    public int getId() {
-        return id;
+    public int getMovieId() {
+        return movieId;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setMovieId(int movieId) {
+        this.movieId = movieId;
     }
 
     public String getTitle() {
@@ -84,6 +89,22 @@ public class Movie {
 
     public void setDirector(Director director) {
         this.director = director;
+    }
+
+    public Language getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(Language language) {
+        this.language = language;
+    }
+
+    public List<Genre> getGenres() {
+        return genres;
+    }
+
+    public void setGenres(List<Genre> genres) {
+        this.genres = genres;
     }
 
     public String getPlot() {

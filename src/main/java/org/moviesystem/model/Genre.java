@@ -1,17 +1,13 @@
 package org.moviesystem.model;
 
-public class Director {
+public class Genre {
     private int id;
     private String name;
 
-    public Director() {}
+    public Genre() {}
 
-    public Director(int id, String name) {
+    public Genre(int id, String name) {
         this.id = id;
-        this.name = name;
-    }
-
-    public Director(String name) {
         this.name = name;
     }
 

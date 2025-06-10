@@ -23,7 +23,7 @@ public class LoginFrame extends JFrame {
     private static User currentUser;
 
     public LoginFrame() {
-        setTitle("Comedy Movie System - Login");
+        setTitle("Movie System - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
         setLocationRelativeTo(null);
@@ -51,7 +51,7 @@ public class LoginFrame extends JFrame {
         headerPanel.setBorder(new EmptyBorder(0, 0, 20, 0));
 
         // Title
-        JLabel titleLabel = new JLabel("Comedy Movie System");
+        JLabel titleLabel = new JLabel("Movie System");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 38));
         titleLabel.setForeground(PRIMARY_COLOR);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);

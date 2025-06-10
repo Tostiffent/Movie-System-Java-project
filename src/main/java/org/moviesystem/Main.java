@@ -14,6 +14,8 @@ import org.moviesystem.model.Director;
 import org.moviesystem.model.Movie;
 import org.moviesystem.model.Review;
 import org.moviesystem.model.User;
+import org.moviesystem.model.Genre;
+import org.moviesystem.model.Language;
 
 import java.awt.*;
 import java.text.SimpleDateFormat;
@@ -36,7 +38,7 @@ public class Main {
     private static JTable moviesTable;
     private static DefaultTableModel tableModel;
     private static JTextField titleField, runningTimeField, ratingField, releaseDateField;
-    private static JTextField actorsField, directorField;
+    private static JTextField actorsField, directorField, genresField, languageField;
     private static JTextArea plotArea, reviewsArea;
     private static JTextField searchField;
 
@@ -55,7 +57,7 @@ public class Main {
     }
 
     public static void createAndShowGUI(User user) {
-        mainFrame = new JFrame("Comedy Movie System - " + user.getUsername());
+        mainFrame = new JFrame("Movie System - " + user.getUsername());
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setSize(1000, 700);
         mainFrame.setLocationRelativeTo(null);
@@ -88,13 +90,13 @@ public class Main {
         statsPanel.setBackground(BACKGROUND_COLOR);
         statsPanel.setBorder(new EmptyBorder(0, 0, 20, 0));
 
-        JPanel totalCard = createStatCard("Total Comedy Movies", String.valueOf(movieList.size()), PRIMARY_COLOR);
+        JPanel totalCard = createStatCard("Total Movies", String.valueOf(movieList.size()), PRIMARY_COLOR);
 
         double avgRating = movieList.stream().mapToDouble(Movie::getRating).average().orElse(0.0);
-        JPanel ratingCard = createStatCard("Avg Comedy Rating", String.format("%.1f/10", avgRating), SUCCESS_COLOR);
+        JPanel ratingCard = createStatCard("Avg Rating", String.format("%.1f/10", avgRating), SUCCESS_COLOR);
 
         String latestMovie = movieList.isEmpty() ? "None" : movieList.get(movieList.size() - 1).getTitle();
-        JPanel latestCard = createStatCard("Latest Added Comedy Movie", latestMovie, SECONDARY_COLOR);
+        JPanel latestCard = createStatCard("Latest Added Movie", latestMovie, SECONDARY_COLOR);
 
         JPanel actionCard = createQuickActionCard(user);
 
@@ -179,7 +181,7 @@ public class Main {
     }
 
     private static void createMovieTable() {
-        String[] columns = {"ID", "Title", "Running Time", "Comedy Rating", "Director", "Release Date"};
+        String[] columns = {"ID", "Title", "Running Time", "Rating", "Director", "Release Date"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -216,15 +218,14 @@ public class Main {
 
     private static void loadMoviesIntoTable() {
         tableModel.setRowCount(0);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         for (Movie movie : movieList) {
             tableModel.addRow(new Object[]{
-                movie.getId(),
+                movie.getMovieId(),
                 movie.getTitle(),
                 movie.getRunningTimeMinutes() + " min",
-                movie.getRating() + "/10",
+                String.format("%.1f", movie.getRating()),
                 movie.getDirector() != null ? movie.getDirector().getName() : "",
-                movie.getReleaseDate() != null ? dateFormat.format(movie.getReleaseDate()) : ""
+                movie.getReleaseDate()
             });
         }
         refreshStatsPanel(LoginFrame.getCurrentUser());
@@ -254,7 +255,7 @@ public class Main {
     }
 
     private static void createAndShowAddMovieDialog() {
-        JDialog dialog = new JDialog(mainFrame, "Add New Comedy Movie", true);
+        JDialog dialog = new JDialog(mainFrame, "Add New Movie", true);
         dialog.setSize(800, 700);
         dialog.setLocationRelativeTo(mainFrame);
         dialog.getContentPane().setBackground(BACKGROUND_COLOR);
@@ -278,66 +279,92 @@ public class Main {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Initialize all text fields first
+        titleField = new JTextField(25);
+        runningTimeField = new JTextField(8);
+        ratingField = new JTextField(20);
+        releaseDateField = new JTextField(20);
+        directorField = new JTextField(25);
+        actorsField = new JTextField(20);
+        genresField = new JTextField(20);
+        languageField = new JTextField(30);
+        plotArea = new JTextArea(4, 30);
+        reviewsArea = new JTextArea(4, 30);
+
+        // Style all text fields
+        styleTextField(titleField);
+        styleTextField(runningTimeField);
+        styleTextField(ratingField);
+        styleTextField(releaseDateField);
+        styleTextField(directorField);
+        styleTextField(actorsField);
+        styleTextField(genresField);
+        styleTextField(languageField);
+        styleTextArea(plotArea);
+        styleTextArea(reviewsArea);
+
+        // Add components to form
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Movie Title:"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
-        titleField = createStyledTextField(25);
         formPanel.add(titleField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Running Time (min):"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 1;
-        runningTimeField = createStyledTextField(8);
+        gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(runningTimeField, gbc);
 
-        gbc.gridx = 2; gbc.gridwidth = 1;
-        JLabel ratingLabel = createFieldLabel("Comedy Rating (0-10):");
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
+        JLabel ratingLabel = createFieldLabel("Rating (0-10):");
         ratingLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         formPanel.add(ratingLabel, gbc);
-        gbc.gridx = 3;
-        ratingField = createStyledTextField(8);
+        gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(ratingField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Release Date:"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
-        releaseDateField = createStyledTextField(15);
         releaseDateField.setToolTipText("Format: YYYY-MM-DD");
         formPanel.add(releaseDateField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Director:"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
-        directorField = createStyledTextField(25);
         formPanel.add(directorField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Main Actors:"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
-        actorsField = createStyledTextField(30);
         formPanel.add(actorsField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.NORTHWEST;
+        formPanel.add(createFieldLabel("Genres:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(genresField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 1;
+        formPanel.add(createFieldLabel("Language:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(languageField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Plot Summary:"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.BOTH;
-        plotArea = createStyledTextArea(4, 30);
         JScrollPane plotScroll = new JScrollPane(plotArea);
         plotScroll.setPreferredSize(new Dimension(400, 100));
         formPanel.add(plotScroll, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0; gbc.gridy = 9; gbc.gridwidth = 1;
         formPanel.add(createFieldLabel("Reviews:"), gbc);
         gbc.gridx = 1; gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.BOTH;
-        reviewsArea = createStyledTextArea(4, 30);
         JScrollPane reviewsScroll = new JScrollPane(reviewsArea);
         reviewsScroll.setPreferredSize(new Dimension(400, 100));
         formPanel.add(reviewsScroll, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 3;
+        // Add buttons panel
+        gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
@@ -367,6 +394,23 @@ public class Main {
         formPanel.add(buttonPanel, gbc);
 
         return formPanel;
+    }
+
+    private static void styleTextField(JTextField field) {
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(189, 195, 199)),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        field.setEnabled(true);
+        field.setEditable(true);
+    }
+
+    private static void styleTextArea(JTextArea area) {
+        area.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setEnabled(true);
+        area.setEditable(true);
     }
 
     private static JButton createStyledButton(String text, Color color) {
@@ -431,43 +475,50 @@ public class Main {
         int selectedRow = moviesTable.getSelectedRow();
         if (selectedRow >= 0) {
             int movieId = (int) tableModel.getValueAt(selectedRow, 0);
-            Movie movie = findMovieById(movieId);
-            if (movie != null) {
-                createAndShowEditMovieDialog(movie);
+            Movie selectedMovie = movieList.stream()
+                    .filter(m -> m.getMovieId() == movieId)
+                    .findFirst()
+                    .orElse(null);
+            if (selectedMovie != null) {
+                createAndShowEditMovieDialog(selectedMovie);
             }
         } else {
             JOptionPane.showMessageDialog(mainFrame,
                     "Please select a movie to edit.",
-                    "No Selection", JOptionPane.WARNING_MESSAGE);
+                    "No Selection",
+                    JOptionPane.WARNING_MESSAGE);
         }
     }
 
     private static void deleteSelectedMovie() {
         int selectedRow = moviesTable.getSelectedRow();
         if (selectedRow >= 0) {
-            int confirmation = JOptionPane.showConfirmDialog(mainFrame,
+            int movieId = (int) tableModel.getValueAt(selectedRow, 0);
+            int choice = JOptionPane.showConfirmDialog(mainFrame,
                     "Are you sure you want to delete this movie?",
-                    "Confirm Delete", JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE);
-
-            if (confirmation == JOptionPane.YES_OPTION) {
-                int movieId = (int) tableModel.getValueAt(selectedRow, 0);
-                if (MovieDAO.deleteMovie(movieId)) {  // First delete from database
-                    movieList.removeIf(movie -> movie.getId() == movieId);  // Then update memory
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (choice == JOptionPane.YES_OPTION) {
+                if (MovieDAO.deleteMovie(movieId)) {
+                    movieList = MovieDAO.getAllMovies();
                     loadMoviesIntoTable();
                     JOptionPane.showMessageDialog(mainFrame,
                             "Movie deleted successfully!",
-                            "Success", JOptionPane.INFORMATION_MESSAGE);
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     JOptionPane.showMessageDialog(mainFrame,
-                            "Failed to delete movie from database.",
-                            "Error", JOptionPane.ERROR_MESSAGE);
+                            "Failed to delete movie.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         } else {
             JOptionPane.showMessageDialog(mainFrame,
                     "Please select a movie to delete.",
-                    "No Selection", JOptionPane.WARNING_MESSAGE);
+                    "No Selection",
+                    JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -499,7 +550,7 @@ public class Main {
             if (MovieDAO.updateMovie(updatedMovie)) {  // First update in database
                 // Then update in memory
                 for (int i = 0; i < movieList.size(); i++) {
-                    if (movieList.get(i).getId() == updatedMovie.getId()) {
+                    if (movieList.get(i).getMovieId() == updatedMovie.getMovieId()) {
                         movieList.set(i, updatedMovie);
                         break;
                     }
@@ -530,27 +581,38 @@ public class Main {
             throw new IllegalArgumentException("Movie title is required.");
         }
         movie.setTitle(title);
-        try {
-            String runningTimeText = runningTimeField.getText().trim();
-            if (!runningTimeText.isEmpty()) {
-                movie.setRunningTimeMinutes(Integer.parseInt(runningTimeText));
+
+        // Handle running time
+        String runningTimeText = runningTimeField.getText().trim();
+        if (!runningTimeText.isEmpty()) {
+            try {
+                int runningTime = Integer.parseInt(runningTimeText);
+                if (runningTime <= 0) {
+                    throw new IllegalArgumentException("Running time must be greater than 0.");
+                }
+                movie.setRunningTimeMinutes(runningTime);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Running time must be a valid number.");
             }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Running time must be a valid number.");
         }
-        try {
-            String ratingText = ratingField.getText().trim();
-            if (!ratingText.isEmpty()) {
+
+        // Handle rating
+        String ratingText = ratingField.getText().trim();
+        if (!ratingText.isEmpty()) {
+            try {
                 double rating = Double.parseDouble(ratingText);
                 if (rating < 0 || rating > 10) {
-                    throw new IllegalArgumentException("Comedy Rating must be between 0 and 10.");
+                    throw new IllegalArgumentException("Rating must be between 0 and 10.");
                 }
                 movie.setRating(rating);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Rating must be a valid number.");
             }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Comedy Rating must be a valid number.");
         }
+
+        // Handle release date
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        dateFormat.setLenient(false);
         try {
             String dateText = releaseDateField.getText().trim();
             if (!dateText.isEmpty()) {
@@ -559,14 +621,53 @@ public class Main {
         } catch (ParseException e) {
             throw new IllegalArgumentException("Release date must be in yyyy-MM-dd format.");
         }
-        movie.setDirector(new Director(directorField.getText().trim()));
-        movie.setActors(Arrays.stream(actorsField.getText().split(","))
-            .map(String::trim).filter(s -> !s.isEmpty()).map(Actor::new).collect(Collectors.toList()));
+
+        // Set director
+        String directorName = directorField.getText().trim();
+        if (!directorName.isEmpty()) {
+            movie.setDirector(new Director(directorName));
+        }
+
+        // Set actors
+        String actorsText = actorsField.getText().trim();
+        if (!actorsText.isEmpty()) {
+            movie.setActors(Arrays.stream(actorsText.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Actor::new)
+                .collect(Collectors.toList()));
+        }
+
+        // Set genres
+        String genresText = genresField.getText().trim();
+        if (!genresText.isEmpty()) {
+            movie.setGenres(Arrays.stream(genresText.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(name -> new Genre(0, name))
+                .collect(Collectors.toList()));
+        }
+
+        // Set language
+        String languageName = languageField.getText().trim();
+        if (!languageName.isEmpty()) {
+            movie.setLanguage(new Language(0, languageName));
+        }
+
         movie.setPlot(plotArea.getText().trim());
-        movie.setReviews(Arrays.stream(reviewsArea.getText().split(","))
-            .map(String::trim).filter(s -> !s.isEmpty()).map(Review::new).collect(Collectors.toList()));
+        
+        // Handle reviews
+        String reviewsText = reviewsArea.getText().trim();
+        if (!reviewsText.isEmpty()) {
+            movie.setReviews(Arrays.stream(reviewsText.split("\n"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Review::new)
+                .collect(Collectors.toList()));
+        }
+
         if (editingMovieId != -1) {
-            movie.setId(editingMovieId);
+            movie.setMovieId(editingMovieId);
         }
         return movie;
     }
@@ -578,22 +679,32 @@ public class Main {
         releaseDateField.setText("");
         directorField.setText("");
         actorsField.setText("");
+        genresField.setText("");
+        languageField.setText("");
         plotArea.setText("");
         reviewsArea.setText("");
         editingMovieId = -1;
     }
 
     private static void populateEditForm(Movie movie) {
-        editingMovieId = movie.getId();
+        editingMovieId = movie.getMovieId();
         titleField.setText(movie.getTitle());
         runningTimeField.setText(String.valueOf(movie.getRunningTimeMinutes()));
-        ratingField.setText(String.valueOf(movie.getRating()));
+        ratingField.setText(String.format("%.1f", movie.getRating()));
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         releaseDateField.setText(movie.getReleaseDate() != null ? dateFormat.format(movie.getReleaseDate()) : "");
         directorField.setText(movie.getDirector() != null ? movie.getDirector().getName() : "");
-        actorsField.setText(movie.getActors() != null ? movie.getActors().stream().map(Actor::getName).collect(Collectors.joining(", ")) : "");
+        actorsField.setText(movie.getActors() != null ? movie.getActors().stream()
+            .map(Actor::getName)
+            .collect(Collectors.joining(", ")) : "");
+        genresField.setText(movie.getGenres() != null ? movie.getGenres().stream()
+            .map(Genre::getName)
+            .collect(Collectors.joining(", ")) : "");
+        languageField.setText(movie.getLanguage() != null ? movie.getLanguage().getName() : "");
         plotArea.setText(movie.getPlot());
-        reviewsArea.setText(movie.getReviews() != null ? movie.getReviews().stream().map(Review::getText).collect(Collectors.joining(", ")) : "");
+        reviewsArea.setText(movie.getReviews() != null ? movie.getReviews().stream()
+            .map(Review::getText)
+            .collect(Collectors.joining("\n")) : "");
     }
 
     private static void performSearch() {
@@ -640,7 +751,7 @@ public class Main {
 
     private static Movie findMovieById(int id) {
         return movieList.stream()
-                .filter(movie -> movie.getId() == id)
+                .filter(movie -> movie.getMovieId() == id)
                 .findFirst()
                 .orElse(null);
     }
@@ -672,7 +783,7 @@ public class Main {
         gbc.gridy = 1;
         addDetailRow(infoPanel, gbc, "Running Time:", movie.getRunningTimeMinutes() + " minutes");
         gbc.gridy = 2;
-        addDetailRow(infoPanel, gbc, "Comedy Rating:", movie.getRating() + "/10");
+        addDetailRow(infoPanel, gbc, "Rating:", movie.getRating() + "/10");
         gbc.gridy = 3;
         addDetailRow(infoPanel, gbc, "Release Date:", movie.getReleaseDate() != null ? new SimpleDateFormat("yyyy-MM-dd").format(movie.getReleaseDate()) : "");
         gbc.gridy = 4;

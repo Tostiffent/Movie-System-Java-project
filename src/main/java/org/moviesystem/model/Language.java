@@ -1,17 +1,13 @@
 package org.moviesystem.model;
 
-public class Director {
+public class Language {
     private int id;
     private String name;
 
-    public Director() {}
+    public Language() {}
 
-    public Director(int id, String name) {
+    public Language(int id, String name) {
         this.id = id;
-        this.name = name;
-    }
-
-    public Director(String name) {
         this.name = name;
     }
 
